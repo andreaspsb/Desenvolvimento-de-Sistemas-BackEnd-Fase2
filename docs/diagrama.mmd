@@ -1,0 +1,118 @@
+classDiagram
+  class Plano {
+    +codigo: number
+    +nome: string
+    +custoMensal: number
+    +data: Date
+    +descricao: string
+  }
+
+  class Cliente {
+    +codigo: number
+    +nome: string
+    +email: string
+  }
+
+  class Assinatura {
+    +codigo: number
+    +codPlano: number
+    +codCli: number
+    +inicioFidelidade: Date
+    +fimFidelidade: Date
+    +custoFinal: number
+    +descricao: string
+    +ativa() boolean
+  }
+
+  class IPlanoRepository {
+    <<abstract>>
+    +findAll() Plano[]
+    +findById(codigo) Plano
+    +updateCustoMensal(codigo, valor) Plano
+  }
+
+  class IClienteRepository {
+    <<abstract>>
+    +findAll() Cliente[]
+    +findById(codigo) Cliente
+  }
+
+  class IAssinaturaRepository {
+    <<abstract>>
+    +create(codPlano, codCli) Assinatura
+    +findAll() Assinatura[]
+    +findByCliente(codCli) Assinatura[]
+    +findByPlano(codPlano) Assinatura[]
+  }
+
+  class PrismaPlanoRepository {
+    +findAll() Plano[]
+    +findById(codigo) Plano
+    +updateCustoMensal(codigo, valor) Plano
+  }
+
+  class PrismaClienteRepository {
+    +findAll() Cliente[]
+    +findById(codigo) Cliente
+  }
+
+  class PrismaAssinaturaRepository {
+    +create(codPlano, codCli) Assinatura
+    +findAll() Assinatura[]
+    +findByCliente(codCli) Assinatura[]
+    +findByPlano(codPlano) Assinatura[]
+  }
+
+  class ListarPlanosUseCase {
+    +execute() Plano[]
+  }
+  class ListarClientesUseCase {
+    +execute() Cliente[]
+  }
+  class CriarAssinaturaUseCase {
+    +execute(codPlano, codCli) Assinatura
+  }
+  class AtualizarCustoPlanoUseCase {
+    +execute(codigo, custoMensal) Plano
+  }
+  class ListarAssinaturasUseCase {
+    +execute(tipo) Assinatura[]
+  }
+  class ListarAssinaturasClienteUseCase {
+    +execute(codCli) Assinatura[]
+  }
+  class ListarAssinaturasPlanoUseCase {
+    +execute(codPlano) Assinatura[]
+  }
+
+  class GestaoController {
+    +getClientes()
+    +getPlanos()
+    +postAssinatura()
+    +patchPlano()
+    +getAssinaturas()
+    +getAssinaturasCliente()
+    +getAssinaturasPlano()
+  }
+
+  IPlanoRepository <|-- PrismaPlanoRepository
+  IClienteRepository <|-- PrismaClienteRepository
+  IAssinaturaRepository <|-- PrismaAssinaturaRepository
+
+  ListarPlanosUseCase --> IPlanoRepository
+  ListarClientesUseCase --> IClienteRepository
+  CriarAssinaturaUseCase --> IAssinaturaRepository
+  CriarAssinaturaUseCase --> IPlanoRepository
+  CriarAssinaturaUseCase --> IClienteRepository
+  AtualizarCustoPlanoUseCase --> IPlanoRepository
+  ListarAssinaturasUseCase --> IAssinaturaRepository
+  ListarAssinaturasClienteUseCase --> IAssinaturaRepository
+  ListarAssinaturasPlanoUseCase --> IAssinaturaRepository
+
+  GestaoController --> ListarPlanosUseCase
+  GestaoController --> ListarClientesUseCase
+  GestaoController --> CriarAssinaturaUseCase
+  GestaoController --> AtualizarCustoPlanoUseCase
+  GestaoController --> ListarAssinaturasUseCase
+  GestaoController --> ListarAssinaturasClienteUseCase
+  GestaoController --> ListarAssinaturasPlanoUseCase

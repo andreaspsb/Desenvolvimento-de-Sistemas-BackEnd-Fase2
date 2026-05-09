@@ -1,0 +1,159 @@
+{
+  "info": {
+    "_postman_id": "fe0e6937-4a83-421c-9c39-fc0ae07e2ca2",
+    "name": "Andreas_Berwaldt_Desenvolvimento_de_Sistemas_backend_Fase-1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "ServicoGestao",
+      "item": [
+        {
+          "name": "Lista Clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/clientes",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "clientes"]
+            },
+            "description": "Retorna a lista de todos os clientes cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Lista Planos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/planos",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "planos"]
+            },
+            "description": "Retorna a lista de todos os planos cadastrados."
+          },
+          "response": []
+        },
+        {
+          "name": "Nova Assinatura",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"codCli\": 3,\n    \"codPlano\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturas",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturas"]
+            },
+            "description": "Cria uma nova assinatura. O sistema calcula automaticamente inicioFidelidade, fimFidelidade (+365 dias) e custoFinal com base no plano."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualiza Custo Mensal Plano",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"custoMensal\": 89.90\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "localhost:3001/gestao/planos/1",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "planos", "1"]
+            },
+            "description": "Atualiza o custo mensal de um plano específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Ativos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturas/ATIVOS",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturas", "ATIVOS"]
+            },
+            "description": "Retorna assinaturas com fimFidelidade >= hoje."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturas/TODOS",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturas", "TODOS"]
+            },
+            "description": "Retorna todas as assinaturas."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Cancelados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturas/CANCELADOS",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturas", "CANCELADOS"]
+            },
+            "description": "Retorna assinaturas com fimFidelidade < hoje."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas por Cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturascliente/1",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturascliente", "1"]
+            },
+            "description": "Retorna todas as assinaturas de um cliente específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas por Plano",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3001/gestao/assinaturasplano/1",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["gestao", "assinaturasplano", "1"]
+            },
+            "description": "Retorna todos os assinantes de um plano específico."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
