@@ -1,73 +1,74 @@
 classDiagram
   class Plano {
-    +codigo: number
-    +nome: string
-    +custoMensal: number
-    +data: Date
-    +descricao: string
+    +number codigo
+    +string nome
+    +number custoMensal
+    +Date data
+    +string descricao
   }
 
   class Cliente {
-    +codigo: number
-    +nome: string
-    +email: string
+    +number codigo
+    +string nome
+    +string email
   }
 
   class Assinatura {
-    +codigo: number
-    +codPlano: number
-    +codCli: number
-    +inicioFidelidade: Date
-    +fimFidelidade: Date
-    +custoFinal: number
-    +descricao: string
+    +number codigo
+    +number codPlano
+    +number codCli
+    +Date inicioFidelidade
+    +Date fimFidelidade
+    +Date dataUltimoPagamento
+    +number custoFinal
+    +string descricao
     +ativa() boolean
   }
 
   class IPlanoRepository {
     <<abstract>>
-    +findAll() Plano[]
+    +findAll() List~Plano~
     +findById(codigo) Plano
     +updateCustoMensal(codigo, valor) Plano
   }
 
   class IClienteRepository {
     <<abstract>>
-    +findAll() Cliente[]
+    +findAll() List~Cliente~
     +findById(codigo) Cliente
   }
 
   class IAssinaturaRepository {
     <<abstract>>
     +create(codPlano, codCli) Assinatura
-    +findAll() Assinatura[]
-    +findByCliente(codCli) Assinatura[]
-    +findByPlano(codPlano) Assinatura[]
+    +findAll() List~Assinatura~
+    +findByCliente(codCli) List~Assinatura~
+    +findByPlano(codPlano) List~Assinatura~
   }
 
   class PrismaPlanoRepository {
-    +findAll() Plano[]
+    +findAll() List~Plano~
     +findById(codigo) Plano
     +updateCustoMensal(codigo, valor) Plano
   }
 
   class PrismaClienteRepository {
-    +findAll() Cliente[]
+    +findAll() List~Cliente~
     +findById(codigo) Cliente
   }
 
   class PrismaAssinaturaRepository {
     +create(codPlano, codCli) Assinatura
-    +findAll() Assinatura[]
-    +findByCliente(codCli) Assinatura[]
-    +findByPlano(codPlano) Assinatura[]
+    +findAll() List~Assinatura~
+    +findByCliente(codCli) List~Assinatura~
+    +findByPlano(codPlano) List~Assinatura~
   }
 
   class ListarPlanosUseCase {
-    +execute() Plano[]
+    +execute() List~Plano~
   }
   class ListarClientesUseCase {
-    +execute() Cliente[]
+    +execute() List~Cliente~
   }
   class CriarAssinaturaUseCase {
     +execute(codPlano, codCli) Assinatura
@@ -76,13 +77,13 @@ classDiagram
     +execute(codigo, custoMensal) Plano
   }
   class ListarAssinaturasUseCase {
-    +execute(tipo) Assinatura[]
+    +execute(tipo) List~Assinatura~
   }
   class ListarAssinaturasClienteUseCase {
-    +execute(codCli) Assinatura[]
+    +execute(codCli) List~Assinatura~
   }
   class ListarAssinaturasPlanoUseCase {
-    +execute(codPlano) Assinatura[]
+    +execute(codPlano) List~Assinatura~
   }
 
   class GestaoController {

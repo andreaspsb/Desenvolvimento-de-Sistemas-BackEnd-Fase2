@@ -23,13 +23,14 @@ model Cliente {
 }
 
 model Assinatura {
-  codigo             Int      @id @default(autoincrement())
-  codPlano           Int
-  codCli             Int
-  inicioFidelidade   DateTime
-  fimFidelidade      DateTime
-  custoFinal         Float
-  descricao          String
+  codigo              Int      @id @default(autoincrement())
+  codPlano            Int
+  codCli              Int
+  inicioFidelidade    DateTime
+  fimFidelidade       DateTime
+  dataUltimoPagamento DateTime
+  custoFinal          Float
+  descricao           String
 
   plano   Plano   @relation(fields: [codPlano], references: [codigo])
   cliente Cliente @relation(fields: [codCli], references: [codigo])

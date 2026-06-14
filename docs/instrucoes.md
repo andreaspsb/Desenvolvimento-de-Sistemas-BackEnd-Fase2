@@ -176,8 +176,8 @@ Base URL: `http://localhost:3001/gestao`
 
 Valores válidos para `:tipo`:
 - `TODOS` — retorna todas as assinaturas
-- `ATIVOS` — retorna apenas assinaturas com `fimFidelidade >= hoje`
-- `CANCELADOS` — retorna apenas assinaturas com `fimFidelidade < hoje`
+- `ATIVOS` — retorna apenas assinaturas em que `dataUltimoPagamento` está a menos de 30 dias da data atual
+- `CANCELADOS` — retorna apenas assinaturas em que `dataUltimoPagamento` está há 30 dias ou mais da data atual
 
 ---
 

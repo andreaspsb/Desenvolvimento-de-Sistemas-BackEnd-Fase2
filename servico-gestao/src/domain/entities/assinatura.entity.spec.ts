@@ -9,13 +9,39 @@ describe('Assinatura Entity', () => {
   const anoPassado = new Date(hoje);
   anoPassado.setFullYear(anoPassado.getFullYear() - 1);
 
-  it('deve estar ativa quando fimFidelidade é no futuro', () => {
-    const assinatura = new Assinatura(1, 1, 1, hoje, anoQueVem, 79.9, 'Ativa');
+  it('deve estar ativa quando dataUltimoPagamento é menor que 30 dias, mesmo com fimFidelidade no passado', () => {
+    const dezDiasAtras = new Date(hoje);
+    dezDiasAtras.setDate(dezDiasAtras.getDate() - 10);
+
+    const assinatura = new Assinatura(
+      1,
+      1,
+      1,
+      anoPassado,
+      anoPassado,
+      dezDiasAtras,
+      79.9,
+      'Ativa',
+    );
+
     expect(assinatura.ativa).toBe(true);
   });
 
-  it('deve estar cancelada quando fimFidelidade é no passado', () => {
-    const assinatura = new Assinatura(2, 1, 1, anoPassado, anoPassado, 79.9, 'Cancelada');
+  it('deve estar cancelada quando dataUltimoPagamento é igual ou maior que 30 dias', () => {
+    const trintaDiasAtras = new Date(hoje);
+    trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+    const assinatura = new Assinatura(
+      2,
+      1,
+      1,
+      hoje,
+      anoQueVem,
+      trintaDiasAtras,
+      79.9,
+      'Cancelada',
+    );
+
     expect(assinatura.ativa).toBe(false);
   });
 });

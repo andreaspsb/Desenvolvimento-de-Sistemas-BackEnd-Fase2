@@ -1,0 +1,8 @@
+{
+  "markdown-pdf.mermaidServer": "https://unpkg.com/mermaid/dist/mermaid.min.js",
+  "markdown-pdf.printBackground": true,
+"markdown-pdf.includeDefaultStyles": true,
+"chat.tools.terminal.autoApprove": {
+    "npx -y @mermaid-js": true
+}
+}

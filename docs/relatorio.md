@@ -20,128 +20,21 @@ O serviço foi implementado em **TypeScript** com **NestJS**, banco de dados **P
 
 ---
 
-## 2. Diagrama UML de Classes
+## 2. Diagramas de Arquitetura
 
-```mermaid
-classDiagram
-  class Plano {
-    +codigo: number
-    +nome: string
-    +custoMensal: number
-    +data: Date
-    +descricao: string
-  }
+A modelagem do sistema foi documentada em dois níveis. O primeiro diagrama apresenta a visão de componentes do sistema completo, incluindo o serviço principal e os microsserviços previstos na especificação. O segundo diagrama apresenta a visão de classes do `ServicoGestao`, que foi o serviço implementado na Fase 1.
 
-  class Cliente {
-    +codigo: number
-    +nome: string
-    +email: string
-  }
+### 2.1 Diagrama de Componentes e Microserviços
 
-  class Assinatura {
-    +codigo: number
-    +codPlano: number
-    +codCli: number
-    +inicioFidelidade: Date
-    +fimFidelidade: Date
-    +custoFinal: number
-    +descricao: string
-    +ativa() boolean
-  }
+![Diagrama de Componentes](./diagrama-componentes.svg)
 
-  class IPlanoRepository {
-    <<abstract>>
-    +findAll() Plano[]
-    +findById(codigo) Plano
-    +updateCustoMensal(codigo, valor) Plano
-  }
+Fonte Mermaid: [diagrama-componentes.mmd](./diagrama-componentes.mmd)
 
-  class IClienteRepository {
-    <<abstract>>
-    +findAll() Cliente[]
-    +findById(codigo) Cliente
-  }
+### 2.2 Diagrama UML de Classes do ServicoGestao
 
-  class IAssinaturaRepository {
-    <<abstract>>
-    +create(codPlano, codCli) Assinatura
-    +findAll() Assinatura[]
-    +findByCliente(codCli) Assinatura[]
-    +findByPlano(codPlano) Assinatura[]
-  }
+![Diagrama UML de Classes](./diagrama.svg)
 
-  class PrismaPlanoRepository {
-    +findAll() Plano[]
-    +findById(codigo) Plano
-    +updateCustoMensal(codigo, valor) Plano
-  }
-
-  class PrismaClienteRepository {
-    +findAll() Cliente[]
-    +findById(codigo) Cliente
-  }
-
-  class PrismaAssinaturaRepository {
-    +create(codPlano, codCli) Assinatura
-    +findAll() Assinatura[]
-    +findByCliente(codCli) Assinatura[]
-    +findByPlano(codPlano) Assinatura[]
-  }
-
-  class ListarPlanosUseCase {
-    +execute() Plano[]
-  }
-  class ListarClientesUseCase {
-    +execute() Cliente[]
-  }
-  class CriarAssinaturaUseCase {
-    +execute(codPlano, codCli) Assinatura
-  }
-  class AtualizarCustoPlanoUseCase {
-    +execute(codigo, custoMensal) Plano
-  }
-  class ListarAssinaturasUseCase {
-    +execute(tipo) Assinatura[]
-  }
-  class ListarAssinaturasClienteUseCase {
-    +execute(codCli) Assinatura[]
-  }
-  class ListarAssinaturasPlanoUseCase {
-    +execute(codPlano) Assinatura[]
-  }
-
-  class GestaoController {
-    +getClientes()
-    +getPlanos()
-    +postAssinatura()
-    +patchPlano()
-    +getAssinaturas()
-    +getAssinaturasCliente()
-    +getAssinaturasPlano()
-  }
-
-  IPlanoRepository <|-- PrismaPlanoRepository
-  IClienteRepository <|-- PrismaClienteRepository
-  IAssinaturaRepository <|-- PrismaAssinaturaRepository
-
-  ListarPlanosUseCase --> IPlanoRepository
-  ListarClientesUseCase --> IClienteRepository
-  CriarAssinaturaUseCase --> IAssinaturaRepository
-  CriarAssinaturaUseCase --> IPlanoRepository
-  CriarAssinaturaUseCase --> IClienteRepository
-  AtualizarCustoPlanoUseCase --> IPlanoRepository
-  ListarAssinaturasUseCase --> IAssinaturaRepository
-  ListarAssinaturasClienteUseCase --> IAssinaturaRepository
-  ListarAssinaturasPlanoUseCase --> IAssinaturaRepository
-
-  GestaoController --> ListarPlanosUseCase
-  GestaoController --> ListarClientesUseCase
-  GestaoController --> CriarAssinaturaUseCase
-  GestaoController --> AtualizarCustoPlanoUseCase
-  GestaoController --> ListarAssinaturasUseCase
-  GestaoController --> ListarAssinaturasClienteUseCase
-  GestaoController --> ListarAssinaturasPlanoUseCase
-```
+Fonte Mermaid: [diagrama.mmd](./diagrama.mmd)
 
 ---
 
@@ -165,12 +58,16 @@ servico-gestao/src/
 
 ### Camada de Domínio (`domain/`)
 
-Contém as **entidades puras** (`Plano`, `Cliente`, `Assinatura`) e os **contratos abstratos** dos repositórios. Não possui dependência de nenhum framework ou biblioteca externa. A entidade `Assinatura`, por exemplo, encapsula a lógica de negócio que determina se uma assinatura está ativa:
+Contém as **entidades puras** (`Plano`, `Cliente`, `Assinatura`) e os **contratos abstratos** dos repositórios. Não possui dependência de nenhum framework ou biblioteca externa. A entidade `Assinatura`, por exemplo, encapsula a lógica de negócio que determina se uma assinatura está ativa. Conforme a especificação, o serviço de internet permanece ativo quando a diferença entre a data atual e `dataUltimoPagamento` é menor que 30 dias. O período de fidelidade continua existindo na entidade, mas não é usado como critério de ativação do serviço:
 
 ```typescript
 // domain/entities/assinatura.entity.ts
 get ativa(): boolean {
-  return this.fimFidelidade >= new Date();
+  const hoje = new Date();
+  const diffMs = hoje.getTime() - this.dataUltimoPagamento.getTime();
+  const diffDias = diffMs / (1000 * 60 * 60 * 24);
+
+  return diffDias < 30;
 }
 ```
 

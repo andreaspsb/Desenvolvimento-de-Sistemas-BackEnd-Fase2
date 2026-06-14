@@ -1,0 +1,27 @@
+flowchart LR
+  subgraph Sistema["Sistema de Planos de Internet"]
+    Gateway["API Gateway / Entrada HTTP"]
+
+    Gestao["ServicoGestao<br/>Clientes, planos e assinaturas"]
+    Faturamento["ServicoFaturamento<br/>Registro de pagamentos"]
+    PlanosAtivos["ServicoPlanosAtivos<br/>Consulta rápida de assinaturas ativas"]
+
+    BancoGestao[("Banco de Dados Gestão<br/>PostgreSQL")]
+    BancoFaturamento[("Banco de Dados Faturamento")]
+    Cache[("Cache de Planos Ativos")]
+    Broker[["Message Broker"]]
+  end
+
+  Gateway --> Gestao
+  Gateway --> Faturamento
+  Gateway --> PlanosAtivos
+
+  Gestao --> BancoGestao
+  Faturamento --> BancoFaturamento
+  PlanosAtivos --> Cache
+
+  Faturamento --> Broker
+  Broker --> Gestao
+  Broker --> PlanosAtivos
+
+  PlanosAtivos -. "consulta status quando cache miss" .-> Gestao

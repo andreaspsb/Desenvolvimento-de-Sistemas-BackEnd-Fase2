@@ -54,7 +54,7 @@
               "port": "3001",
               "path": ["gestao", "assinaturas"]
             },
-            "description": "Cria uma nova assinatura. O sistema calcula automaticamente inicioFidelidade, fimFidelidade (+365 dias) e custoFinal com base no plano."
+            "description": "Cria uma nova assinatura. O sistema calcula automaticamente inicioFidelidade, fimFidelidade (+365 dias), dataUltimoPagamento e custoFinal com base no plano."
           },
           "response": []
         },
@@ -89,7 +89,7 @@
               "port": "3001",
               "path": ["gestao", "assinaturas", "ATIVOS"]
             },
-            "description": "Retorna assinaturas com fimFidelidade >= hoje."
+            "description": "Retorna assinaturas em que dataUltimoPagamento está a menos de 30 dias da data atual."
           },
           "response": []
         },
@@ -119,7 +119,7 @@
               "port": "3001",
               "path": ["gestao", "assinaturas", "CANCELADOS"]
             },
-            "description": "Retorna assinaturas com fimFidelidade < hoje."
+            "description": "Retorna assinaturas em que dataUltimoPagamento está há 30 dias ou mais da data atual."
           },
           "response": []
         },

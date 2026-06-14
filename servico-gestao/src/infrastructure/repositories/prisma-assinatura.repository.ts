@@ -14,6 +14,7 @@ export class PrismaAssinaturaRepository implements IAssinaturaRepository {
       a.codCli,
       a.inicioFidelidade,
       a.fimFidelidade,
+      a.dataUltimoPagamento,
       a.custoFinal,
       a.descricao,
     );
@@ -31,6 +32,7 @@ export class PrismaAssinaturaRepository implements IAssinaturaRepository {
         codCli,
         inicioFidelidade: hoje,
         fimFidelidade,
+        dataUltimoPagamento: hoje,
         custoFinal: plano!.custoMensal,
         descricao: `Assinatura do plano ${plano!.nome}`,
       },

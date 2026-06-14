@@ -36,12 +36,12 @@ async function main() {
   anoQueVem.setFullYear(anoQueVem.getFullYear() + 1);
 
   await Promise.all([
-    prisma.assinatura.create({ data: { codPlano: planos[0].codigo, codCli: clientes[0].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, custoFinal: planos[0].custoMensal, descricao: `Assinatura do plano ${planos[0].nome}` } }),
-    prisma.assinatura.create({ data: { codPlano: planos[1].codigo, codCli: clientes[1].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, custoFinal: planos[1].custoMensal, descricao: `Assinatura do plano ${planos[1].nome}` } }),
-    prisma.assinatura.create({ data: { codPlano: planos[2].codigo, codCli: clientes[2].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, custoFinal: planos[2].custoMensal, descricao: `Assinatura do plano ${planos[2].nome}` } }),
-    prisma.assinatura.create({ data: { codPlano: planos[3].codigo, codCli: clientes[3].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, custoFinal: planos[3].custoMensal, descricao: `Assinatura do plano ${planos[3].nome}` } }),
+    prisma.assinatura.create({ data: { codPlano: planos[0].codigo, codCli: clientes[0].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, dataUltimoPagamento: hoje, custoFinal: planos[0].custoMensal, descricao: `Assinatura do plano ${planos[0].nome}` } }),
+    prisma.assinatura.create({ data: { codPlano: planos[1].codigo, codCli: clientes[1].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, dataUltimoPagamento: hoje, custoFinal: planos[1].custoMensal, descricao: `Assinatura do plano ${planos[1].nome}` } }),
+    prisma.assinatura.create({ data: { codPlano: planos[2].codigo, codCli: clientes[2].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, dataUltimoPagamento: hoje, custoFinal: planos[2].custoMensal, descricao: `Assinatura do plano ${planos[2].nome}` } }),
+    prisma.assinatura.create({ data: { codPlano: planos[3].codigo, codCli: clientes[3].codigo, inicioFidelidade: hoje, fimFidelidade: anoQueVem, dataUltimoPagamento: hoje, custoFinal: planos[3].custoMensal, descricao: `Assinatura do plano ${planos[3].nome}` } }),
     // Assinatura cancelada (fimFidelidade no passado)
-    prisma.assinatura.create({ data: { codPlano: planos[4].codigo, codCli: clientes[4].codigo, inicioFidelidade: anoPassado, fimFidelidade: anoPassado, custoFinal: planos[4].custoMensal, descricao: `Assinatura do plano ${planos[4].nome}` } }),
+    prisma.assinatura.create({ data: { codPlano: planos[4].codigo, codCli: clientes[4].codigo, inicioFidelidade: anoPassado, fimFidelidade: anoPassado, dataUltimoPagamento: anoPassado, custoFinal: planos[4].custoMensal, descricao: `Assinatura do plano ${planos[4].nome}` } }),
   ]);
 
   console.log('Seed concluído!');
