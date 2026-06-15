@@ -5,4 +5,9 @@ export abstract class IAssinaturaRepository {
   abstract findAll(): Promise<Assinatura[]>;
   abstract findByCliente(codCli: number): Promise<Assinatura[]>;
   abstract findByPlano(codPlano: number): Promise<Assinatura[]>;
+  abstract updateDataUltimoPagamento(
+    codigo: number,
+    dataUltimoPagamento: Date,
+  ): Promise<Assinatura>;
+  abstract findById(codigo: number): Promise<Assinatura | null>;
 }

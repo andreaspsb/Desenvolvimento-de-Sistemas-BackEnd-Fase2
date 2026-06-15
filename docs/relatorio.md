@@ -1,218 +1,165 @@
-# Relatório de Arquitetura — ServicoGestao
-**Desenvolvimento de Sistemas Back-End — Fase 1**
-**Aluno:** Andreas Berwaldt
-**Data:** Maio de 2026
+# Relatorio de Arquitetura - Fase 2
 
----
+**Desenvolvimento de Sistemas Back-End - Fase 2**  
+**Aluno:** Andreas Berwaldt  
+**Data:** Junho de 2026
 
-## 1. Descrição do Projeto
+## 1. Descricao do Projeto
 
-O **ServicoGestao** é o serviço principal de um sistema destinado a operadoras de internet para gerenciar planos e assinaturas de clientes. Ele expõe uma API REST que permite:
+O sistema implementa o backend de controle de planos de uma operadora de internet. A Fase 2 finaliza a arquitetura proposta na especificacao, integrando o servico principal a dois microsservicos:
 
-- Listar clientes e planos cadastrados
-- Criar assinaturas vinculando um cliente a um plano
-- Atualizar o custo mensal de um plano
-- Listar assinaturas com filtros (todas, ativas ou canceladas)
-- Listar assinaturas de um cliente específico
-- Listar assinaturas de um plano específico
+- `ServicoGestao`: gerencia clientes, planos e assinaturas.
+- `ServicoFaturamento`: registra pagamentos em banco proprio e publica eventos.
+- `ServicoPlanosAtivos`: responde rapidamente se uma assinatura esta ativa, usando cache.
+- `api-gateway`: fornece uma entrada HTTP unica para as chamadas de teste.
 
-O serviço foi implementado em **TypeScript** com **NestJS**, banco de dados **PostgreSQL** via **Prisma ORM (v7)**, seguindo os preceitos da **Arquitetura Limpa** proposta por Robert C. Martin.
+A comunicacao assincrona usa RabbitMQ. O ServicoFaturamento publica evento de pagamento no exchange `pagamentos`; o ServicoGestao observa esse evento para atualizar `dataUltimoPagamento`, e o ServicoPlanosAtivos observa o mesmo evento para invalidar o cache da assinatura.
 
----
+## 2. Arquitetura
 
-## 2. Diagramas de Arquitetura
+A arquitetura da entrega segue o diagrama de componentes proposto na especificacao da disciplina: API Gateway como entrada HTTP, ServicoGestao como servico principal, ServicoFaturamento como microsservico de pagamentos, ServicoPlanosAtivos como microsservico de consulta rapida, dois bancos de dados independentes, cache e message broker.
 
-A modelagem do sistema foi documentada em dois níveis. O primeiro diagrama apresenta a visão de componentes do sistema completo, incluindo o serviço principal e os microsserviços previstos na especificação. O segundo diagrama apresenta a visão de classes do `ServicoGestao`, que foi o serviço implementado na Fase 1.
+Fluxo principal:
 
-### 2.1 Diagrama de Componentes e Microserviços
+1. O cliente chama `POST /registrarpagamento` no API Gateway.
+2. O Gateway encaminha a chamada ao ServicoFaturamento.
+3. O ServicoFaturamento grava o pagamento em seu PostgreSQL.
+4. O ServicoFaturamento publica evento no RabbitMQ.
+5. O ServicoGestao consome o evento e atualiza `dataUltimoPagamento`.
+6. O ServicoPlanosAtivos consome o evento e remove a assinatura do cache.
+7. Na proxima consulta, o ServicoPlanosAtivos consulta o ServicoGestao em caso de cache miss.
 
-![Diagrama de Componentes](./diagrama-componentes.svg)
+## 3. Servicos
 
-Fonte Mermaid: [diagrama-componentes.mmd](./diagrama-componentes.mmd)
+### ServicoGestao
 
-### 2.2 Diagrama UML de Classes do ServicoGestao
+Mantem os dados de `Cliente`, `Plano` e `Assinatura` em PostgreSQL proprio. Continua seguindo Clean Architecture:
 
-![Diagrama UML de Classes](./diagrama.svg)
-
-Fonte Mermaid: [diagrama.mmd](./diagrama.mmd)
-
----
-
-## 3. Organização segundo a Arquitetura Limpa
-
-A Arquitetura Limpa de Robert C. Martin organiza o sistema em camadas concêntricas onde as dependências sempre apontam para dentro (em direção ao domínio). O projeto está estruturado em quatro camadas:
-
-```
-servico-gestao/src/
-├── domain/               # Camada mais interna — regras de negócio
-│   ├── entities/         # Entidades do domínio
-│   └── repositories/     # Contratos abstratos (interfaces)
-├── application/          # Casos de uso — orquestração do negócio
-│   └── use-cases/
-├── infrastructure/       # Detalhes externos — banco de dados
-│   ├── database/         # PrismaService
-│   └── repositories/     # Implementações concretas com Prisma
-└── presentation/         # Ponto de entrada — controllers HTTP
-    └── controllers/
+```text
+src/
+├── domain/
+├── application/
+├── infrastructure/
+└── presentation/
 ```
 
-### Camada de Domínio (`domain/`)
+Na Fase 2 foram adicionados:
 
-Contém as **entidades puras** (`Plano`, `Cliente`, `Assinatura`) e os **contratos abstratos** dos repositórios. Não possui dependência de nenhum framework ou biblioteca externa. A entidade `Assinatura`, por exemplo, encapsula a lógica de negócio que determina se uma assinatura está ativa. Conforme a especificação, o serviço de internet permanece ativo quando a diferença entre a data atual e `dataUltimoPagamento` é menor que 30 dias. O período de fidelidade continua existindo na entidade, mas não é usado como critério de ativação do serviço:
+- caso de uso para atualizar `dataUltimoPagamento` a partir de pagamento;
+- caso de uso para verificar se uma assinatura esta ativa por codigo;
+- endpoint interno `GET /gestao/assinatura/:codass/status`;
+- consumer RabbitMQ para eventos de pagamento.
+
+### ServicoFaturamento
+
+Possui banco PostgreSQL proprio com entidade `Pagamento`. O endpoint `POST /registrarpagamento` recebe `dia`, `mes`, `ano`, `codAss` e `valorPago`, persiste o pagamento e publica evento no RabbitMQ.
+
+O nucleo foi construido com TDD:
+
+- registrar pagamento valido;
+- publicar evento apos persistir;
+- rejeitar valor pago menor ou igual a zero;
+- controller convertendo `dia/mes/ano` para `Date`;
+- repositorio Prisma;
+- publisher RabbitMQ.
+
+### ServicoPlanosAtivos
+
+Responde `GET /planosativos/:codass` com booleano. Usa cache em memoria para reduzir consultas ao ServicoGestao.
+
+Comportamento:
+
+- cache hit: retorna o valor armazenado;
+- cache miss: consulta `GET /gestao/assinatura/:codass/status` no ServicoGestao e armazena o resultado;
+- evento de pagamento: invalida a entrada da assinatura paga.
+
+### API Gateway
+
+Roda na porta `3000` e encaminha as rotas externas para os servicos internos:
+
+- `/gestao/*` para o ServicoGestao;
+- `/registrarpagamento` para o ServicoFaturamento;
+- `/planosativos/:codass` para o ServicoPlanosAtivos.
+
+## 4. Regra de Negocio
+
+A especificacao define que o servico de internet requer pagamento a cada 30 dias, sem tolerancia de atraso. Por isso, a regra canonica implementada e:
 
 ```typescript
-// domain/entities/assinatura.entity.ts
 get ativa(): boolean {
   const hoje = new Date();
   const diffMs = hoje.getTime() - this.dataUltimoPagamento.getTime();
   const diffDias = diffMs / (1000 * 60 * 60 * 24);
-
   return diffDias < 30;
 }
 ```
 
-Os repositórios são definidos como **classes abstratas** (e não interfaces TypeScript) para compatibilidade com o sistema de injeção de dependência do NestJS, que requer tokens em tempo de execução:
+O campo `fimFidelidade` permanece na entidade para representar fidelidade/promocionalidade, mas nao determina se a assinatura esta ativa.
 
-```typescript
-// domain/repositories/plano.repository.ts
-export abstract class IPlanoRepository {
-  abstract findAll(): Promise<Plano[]>;
-  abstract findById(codigo: number): Promise<Plano | null>;
-  abstract updateCustoMensal(codigo: number, valor: number): Promise<Plano>;
+## 5. Bancos e Broker
+
+| Componente | Tecnologia | Porta |
+|---|---|---:|
+| Banco Gestao | PostgreSQL 16 | 5433 |
+| Banco Faturamento | PostgreSQL 16 | 5434 |
+| Broker | RabbitMQ | 5672 |
+| Painel RabbitMQ | RabbitMQ Management | 15672 |
+
+O `docker-compose.yml` da raiz sobe os dois bancos e o RabbitMQ.
+
+## 6. Testes e Validacao
+
+Testes automatizados validados:
+
+```text
+servico-gestao:         27 testes
+servico-faturamento:    8 testes
+servico-planos-ativos:  9 testes
+api-gateway:            5 testes
+```
+
+Todos os builds TypeScript/NestJS tambem foram executados com sucesso.
+
+Teste integrado validado via gateway:
+
+```text
+GET  /gestao/clientes       -> retornou 10 clientes
+GET  /planosativos/1        -> retornou true
+POST /registrarpagamento    -> registrou pagamento
+GET  /planosativos/1        -> retornou true apos evento/cache invalidado
+```
+
+Resposta observada no registro de pagamento:
+
+```json
+{
+  "codigo": 1,
+  "codAss": 1,
+  "valorPago": 99.9,
+  "dataPagamento": "2026-06-14T00:00:00.000Z"
 }
 ```
 
-### Camada de Aplicação (`application/`)
+## 7. Desafios Encontrados
 
-Contém os **casos de uso**, que orquestram as entidades e repositórios para atender às regras de aplicação. Cada caso de uso recebe os repositórios via injeção de dependência e não conhece detalhes de banco ou HTTP.
-
-Exemplo — validação de negócio no `CriarAssinaturaUseCase`:
-
-```typescript
-// application/use-cases/criar-assinatura.use-case.ts
-async execute(codPlano: number, codCli: number): Promise<Assinatura> {
-  const plano = await this.planoRepo.findById(codPlano);
-  if (!plano) throw new NotFoundException(`Plano ${codPlano} não encontrado`);
-
-  const cliente = await this.clienteRepo.findById(codCli);
-  if (!cliente) throw new NotFoundException(`Cliente ${codCli} não encontrado`);
-
-  return this.assinaturaRepo.create(codPlano, codCli);
-}
-```
-
-### Camada de Infraestrutura (`infrastructure/`)
-
-Contém as **implementações concretas** dos repositórios usando Prisma ORM, bem como o `PrismaService`. Esta camada conhece o banco de dados, mas o domínio não a conhece — a inversão de dependência é garantida pelo módulo do NestJS.
-
-O `PrismaService` utiliza o adaptador `@prisma/adapter-pg` exigido pelo Prisma 7 para conexão com PostgreSQL:
-
-```typescript
-// infrastructure/database/prisma.service.ts
-constructor() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-  super({ adapter });
-}
-```
-
-### Camada de Apresentação (`presentation/`)
-
-Contém o `GestaoController`, que traduz requisições HTTP em chamadas aos casos de uso e retorna as respostas. O controller não contém lógica de negócio.
-
-```typescript
-// presentation/controllers/gestao.controller.ts
-@Post('assinaturas')
-async criarAssinatura(@Body() body: { codPlano: number; codCli: number }) {
-  return this.criarAssinaturaUseCase.execute(body.codPlano, body.codCli);
-}
-```
-
----
-
-## 4. Princípios SOLID
-
-### S — Single Responsibility Principle (Princípio da Responsabilidade Única)
-
-Cada classe possui uma única responsabilidade bem definida:
-- `Plano`, `Cliente`, `Assinatura`: representam apenas os dados e regras intrínsecas da entidade
-- `ListarPlanosUseCase`: responsável exclusivamente por listar planos
-- `PrismaPlanoRepository`: responsável exclusivamente por persistência de planos
-- `GestaoController`: responsável exclusivamente por tratar requisições HTTP
-
-### O — Open/Closed Principle (Princípio Aberto/Fechado)
-
-Os casos de uso dependem dos **contratos abstratos** (`IPlanoRepository`, `IClienteRepository`, `IAssinaturaRepository`), e não das implementações concretas. Para trocar o banco de dados de PostgreSQL para MongoDB, basta criar uma nova implementação do repositório abstrato sem modificar nenhum caso de uso.
-
-### L — Liskov Substitution Principle (Princípio da Substituição de Liskov)
-
-As classes `PrismaPlanoRepository`, `PrismaClienteRepository` e `PrismaAssinaturaRepository` substituem completamente seus contratos abstratos. O sistema funciona corretamente em todos os testes unitários que utilizam **mocks** no lugar das implementações concretas, comprovando a substituição transparente.
-
-### I — Interface Segregation Principle (Princípio da Segregação de Interfaces)
-
-Os repositórios abstratos são segregados por entidade: `IPlanoRepository`, `IClienteRepository` e `IAssinaturaRepository`. Nenhum caso de uso é forçado a depender de métodos que não utiliza. Por exemplo, `ListarClientesUseCase` injeta apenas `IClienteRepository` e não tem acesso a métodos de planos ou assinaturas.
-
-### D — Dependency Inversion Principle (Princípio da Inversão de Dependência)
-
-A inversão de dependência é implementada via **injeção de dependência do NestJS** no `AppModule`:
-
-```typescript
-// app.module.ts
-providers: [
-  { provide: IPlanoRepository,      useClass: PrismaPlanoRepository },
-  { provide: IClienteRepository,    useClass: PrismaClienteRepository },
-  { provide: IAssinaturaRepository, useClass: PrismaAssinaturaRepository },
-  ListarPlanosUseCase,
-  ListarClientesUseCase,
-  // ...demais use cases
-],
-```
-
-Os casos de uso declaram dependência dos **contratos abstratos** (alta abstração), e o NestJS resolve em tempo de execução para as **implementações concretas** (baixo nível). O domínio nunca importa diretamente da camada de infraestrutura.
-
----
-
-## 5. Padrões de Projeto Utilizados
-
-### Repository Pattern
-
-Cada entidade de domínio possui um repositório abstrato que define o contrato de acesso a dados, e uma implementação concreta que usa Prisma. Esse padrão isola a lógica de persistência, permitindo que os casos de uso trabalhem com dados sem conhecer o mecanismo de armazenamento.
-
-### Use Case (Interactor)
-
-Cada funcionalidade de negócio está encapsulada em um caso de uso independente. Esse padrão, central na Arquitetura Limpa, garante que a lógica de aplicação seja testável de forma isolada e não esteja acoplada ao framework HTTP.
-
-### Dependency Injection
-
-O NestJS gerencia o ciclo de vida dos objetos e injeta dependências automaticamente. Os casos de uso declaram suas dependências no construtor, e o framework as resolve com base nos `providers` configurados no módulo.
-
-### Singleton (via NestJS)
-
-O `PrismaService` e os repositórios são registrados como providers com escopo padrão do NestJS (singleton por módulo), garantindo que uma única instância do cliente Prisma seja reutilizada em todas as requisições — evitando overhead de conexão.
-
----
-
-## 6. Conclusão
-
-### Desenvolvimento da Fase
-
-A implementação desta fase consolidou a aplicação prática da Arquitetura Limpa em um projeto real com TypeScript e NestJS. O maior desafio foi a **compatibilidade com o Prisma 7**, que introduziu mudanças significativas em relação às versões anteriores: a URL de conexão passou a ser configurada em `prisma.config.ts` (e não no `schema.prisma`), e o cliente passou a exigir um adaptador explícito (`@prisma/adapter-pg`) para conexão com PostgreSQL.
-
-Outro ponto de atenção foi a decisão de usar **classes abstratas** em vez de interfaces TypeScript para os contratos de repositório. Interfaces TypeScript são apagadas em tempo de execução (type erasure), impossibilitando seu uso como tokens de injeção de dependência no NestJS. A troca para `abstract class` resolveu o problema sem comprometer a semântica do contrato.
-
-### Desafios Encontrados
-
-| Desafio | Solução |
+| Desafio | Solucao |
 |---|---|
-| Prisma 7 não aceita `url` no `datasource` do `schema.prisma` | Configuração via `prisma.config.ts` com `datasource.url` |
-| `PrismaClient` exige adaptador no Prisma 7 | `PrismaPg` passado ao construtor do `PrismaService` |
-| Porta 5432 ocupada localmente | Docker mapeado para `5433:5432` |
-| Interface TypeScript não funciona como token de DI no NestJS | Substituído por `abstract class` |
-| `.env` não carregado automaticamente no NestJS | `import 'dotenv/config'` adicionado ao `main.ts` |
-| Tipos do Jest ausentes nos arquivos de spec | `npm install @types/jest` + `"types": ["jest", "node"]` no `tsconfig.json` |
+| Integrar tres servicos mantendo responsabilidades separadas | API Gateway para entrada HTTP e RabbitMQ para comunicacao assincrona |
+| Evitar duplicar regra de assinatura ativa no ServicoPlanosAtivos | O cache miss consulta o ServicoGestao, que continua dono da regra |
+| Prisma 7 exige configuracao diferente das versoes anteriores | Uso de `prisma.config.ts` e `@prisma/adapter-pg` |
+| Injecao de dependencias com contratos abstratos no NestJS | Uso de `abstract class` como token e `@Inject(...)` quando necessario |
+| Builds gerando `.js` dentro de `src` nos servicos novos | Configuracao de `rootDir`, `outDir` e `include` no `tsconfig.json` |
+| Testar comunicacao assincrona sem depender de broker nos testes unitarios | Portas abstratas e adaptadores testados com fakes/mocks |
 
-### Referências
+## 8. Conclusao
 
-- [Documentação oficial do NestJS](https://docs.nestjs.com/)
-- [Documentação do Prisma 7 — Adaptadores de Driver](https://www.prisma.io/docs/orm/overview/databases/database-drivers)
-- [Clean Architecture — Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [NestJS: Custom Providers](https://docs.nestjs.com/fundamentals/custom-providers)
+A Fase 2 concluiu a arquitetura proposta no enunciado com os tres servicos solicitados, infraestrutura de broker, bancos independentes e cache para consulta rapida de assinaturas ativas. A abordagem incremental com TDD ajudou a manter as regras testaveis antes da integracao com NestJS, Prisma e RabbitMQ.
+
+O sistema pode ser executado localmente com Docker Compose para a infraestrutura e quatro processos Node/NestJS para os servicos. A collection Postman foi atualizada para usar o API Gateway na porta `3000`, conforme a estrutura final da entrega.
+
+## 9. Referencias
+
+- Documentacao oficial do NestJS: https://docs.nestjs.com/
+- Documentacao oficial do Prisma: https://www.prisma.io/docs
+- RabbitMQ Tutorials: https://www.rabbitmq.com/tutorials
+- Clean Architecture - Robert C. Martin: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html

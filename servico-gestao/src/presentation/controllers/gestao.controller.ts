@@ -6,6 +6,7 @@ import { ListarAssinaturasPlanoUseCase } from '../../application/use-cases/lista
 import { ListarClientesUseCase } from '../../application/use-cases/listar-clientes.use-case';
 import { ListarPlanosUseCase } from '../../application/use-cases/listar-planos.use-case';
 import { AtualizarCustoPlanoUseCase } from '../../application/use-cases/atualizar-custo-plano.use-case';
+import { VerificarAssinaturaAtivaUseCase } from '../../application/use-cases/verificar-assinatura-ativa.use-case';
 
 @Controller('gestao')
 export class GestaoController {
@@ -17,6 +18,7 @@ export class GestaoController {
     private readonly listarAssinaturas: ListarAssinaturasUseCase,
     private readonly listarAssinaturasCliente: ListarAssinaturasClienteUseCase,
     private readonly listarAssinaturasPlano: ListarAssinaturasPlanoUseCase,
+    private readonly verificarAssinaturaAtiva: VerificarAssinaturaAtivaUseCase,
   ) {}
 
   @Get('clientes')
@@ -55,5 +57,10 @@ export class GestaoController {
   @Get('assinaturasplano/:codplano')
   getAssinaturasPlano(@Param('codplano') codplano: string) {
     return this.listarAssinaturasPlano.execute(Number(codplano));
+  }
+
+  @Get('assinatura/:codass/status')
+  getAssinaturaStatus(@Param('codass') codass: string) {
+    return this.verificarAssinaturaAtiva.execute(Number(codass));
   }
 }

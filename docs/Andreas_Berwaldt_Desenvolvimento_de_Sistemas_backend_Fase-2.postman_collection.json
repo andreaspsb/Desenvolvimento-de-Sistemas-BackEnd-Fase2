@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "fe0e6937-4a83-421c-9c39-fc0ae07e2ca2",
+    "name": "Andreas_Berwaldt_Desenvolvimento_de_Sistemas_backend_Fase-2",
+    "description": "Collection atualizada para a Fase 2. Todas as requisicoes passam pelo API Gateway em localhost:3000.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "ServicoGestao via Gateway",
+      "item": [
+        {
+          "name": "Lista Clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/clientes",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "clientes"]
+            },
+            "description": "Lista todos os clientes cadastrados no ServicoGestao."
+          },
+          "response": []
+        },
+        {
+          "name": "Lista Planos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/planos",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "planos"]
+            },
+            "description": "Lista todos os planos cadastrados no ServicoGestao."
+          },
+          "response": []
+        },
+        {
+          "name": "Nova Assinatura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codCli\": 3,\n  \"codPlano\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturas",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturas"]
+            },
+            "description": "Cria uma nova assinatura. O sistema calcula automaticamente inicioFidelidade, fimFidelidade, dataUltimoPagamento, custoFinal e descricao."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualiza Custo Mensal Plano",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"custoMensal\": 149.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "localhost:3000/gestao/planos/1",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "planos", "1"]
+            },
+            "description": "Atualiza o custo mensal de um plano."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Ativas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturas/ATIVOS",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturas", "ATIVOS"]
+            },
+            "description": "Lista assinaturas em que dataUltimoPagamento esta a menos de 30 dias da data atual."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturas/TODOS",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturas", "TODOS"]
+            },
+            "description": "Lista todas as assinaturas."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas Canceladas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturas/CANCELADOS",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturas", "CANCELADOS"]
+            },
+            "description": "Lista assinaturas em que dataUltimoPagamento esta ha 30 dias ou mais da data atual."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas por Cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturascliente/2",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturascliente", "2"]
+            },
+            "description": "Lista assinaturas do cliente informado."
+          },
+          "response": []
+        },
+        {
+          "name": "Assinaturas por Plano",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinaturasplano/2",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinaturasplano", "2"]
+            },
+            "description": "Lista assinaturas do plano informado."
+          },
+          "response": []
+        },
+        {
+          "name": "Status de Assinatura",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/gestao/assinatura/1/status",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["gestao", "assinatura", "1", "status"]
+            },
+            "description": "Endpoint interno exposto pelo gateway para verificar se uma assinatura esta ativa no ServicoGestao."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ServicoFaturamento via Gateway",
+      "item": [
+        {
+          "name": "Registrar Pagamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dia\": 14,\n  \"mes\": 6,\n  \"ano\": 2026,\n  \"codAss\": 1,\n  \"valorPago\": 99.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "localhost:3000/registrarpagamento",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["registrarpagamento"]
+            },
+            "description": "Registra um pagamento no ServicoFaturamento. Apos persistir, o servico publica evento no RabbitMQ para o ServicoGestao e o ServicoPlanosAtivos."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ServicoPlanosAtivos via Gateway",
+      "item": [
+        {
+          "name": "Assinatura Ativa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "localhost:3000/planosativos/1",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["planosativos", "1"]
+            },
+            "description": "Retorna true ou false indicando se a assinatura permanece ativa. Em cache miss, consulta o ServicoGestao."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

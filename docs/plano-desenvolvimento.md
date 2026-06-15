@@ -1,84 +1,102 @@
-# Plano de Desenvolvimento: ServicoGestao — Fase 1
+# Plano de Desenvolvimento - Fase 2
 
-## Stack
-- **Linguagem**: TypeScript
-- **Framework**: NestJS
-- **ORM**: Prisma
-- **Banco de dados**: PostgreSQL
-- **Container**: Docker
-- **Arquitetura**: Clean Architecture (Robert Martin)
-- **Metodologia**: TDD via agente Professor
+## Objetivo
 
----
+Finalizar o sistema de controle de planos com microsservicos integrados ao ServicoGestao, conforme enunciado da Fase 2.
 
-## Fase A — Setup (pré-TDD)
+## Arquitetura Escolhida
 
-### A1. Scaffold do projeto NestJS
-- `nest new servico-gestao` dentro do repo
-- Instalar dependências: `@nestjs/swagger`, `prisma`, `@prisma/client`, `jest`, `@nestjs/testing`
+- **API Gateway** na porta `3000`.
+- **ServicoGestao** na porta `3001`, com PostgreSQL proprio.
+- **ServicoFaturamento** na porta `3002`, com PostgreSQL proprio.
+- **ServicoPlanosAtivos** na porta `3003`, com cache em memoria.
+- **RabbitMQ** como message broker.
 
-### A2. Docker Compose
-- Arquivo `docker-compose.yml` com serviço PostgreSQL (porta 5432)
-- `.env` com `DATABASE_URL`
+## Decisoes
 
-### A3. Schema Prisma
-- `prisma/schema.prisma` com modelos: Plano, Cliente, Assinatura
-- `prisma migrate dev --name init`
+- Manter NestJS + TypeScript em todos os servicos.
+- Manter Prisma 7 nos servicos com banco.
+- Usar RabbitMQ com exchange `pagamentos` do tipo `fanout`.
+- Usar cache em memoria no ServicoPlanosAtivos, suficiente para a entrega academica.
+- Fazer o ServicoPlanosAtivos consultar o ServicoGestao em cache miss, evitando duplicar a regra de dominio.
+- Considerar assinatura ativa quando `dataUltimoPagamento` ocorreu ha menos de 30 dias.
 
-### A4. Estrutura de pastas (Clean Architecture)
+## Ciclos de Implementacao
+
+### 1. ServicoFaturamento
+
+- Criar entidade `Pagamento`.
+- Criar caso de uso `RegistrarPagamentoUseCase`.
+- Validar pagamento com `valorPago > 0`.
+- Persistir pagamento com Prisma.
+- Publicar evento de pagamento no RabbitMQ.
+- Expor `POST /registrarpagamento`.
+
+### 2. ServicoGestao
+
+- Adicionar metodo de repositorio para atualizar `dataUltimoPagamento`.
+- Criar caso de uso para registrar pagamento recebido por evento.
+- Criar caso de uso para verificar assinatura ativa por codigo.
+- Expor `GET /gestao/assinatura/:codass/status`.
+- Consumir eventos de pagamento do RabbitMQ.
+
+### 3. ServicoPlanosAtivos
+
+- Criar caso de uso para verificar plano ativo.
+- Criar cache em memoria.
+- Criar client HTTP para consultar o ServicoGestao.
+- Expor `GET /planosativos/:codass`.
+- Consumir eventos de pagamento e invalidar cache.
+
+### 4. API Gateway
+
+- Encaminhar rotas `/gestao/*` para o ServicoGestao.
+- Encaminhar `/registrarpagamento` para o ServicoFaturamento.
+- Encaminhar `/planosativos/:codass` para o ServicoPlanosAtivos.
+
+### 5. Infraestrutura
+
+- Criar `docker-compose.yml` raiz com:
+  - PostgreSQL Gestao em `5433`;
+  - PostgreSQL Faturamento em `5434`;
+  - RabbitMQ em `5672`;
+  - RabbitMQ Management em `15672`.
+
+## Verificacao
+
+Comandos executados por servico:
+
+```bash
+npm test
+npm run build
 ```
-src/
-  domain/
-    entities/        ← Plano, Cliente, Assinatura (classes TypeScript puras, sem ORM)
-    repositories/    ← Interfaces IPlanoRepository, IClienteRepository, IAssinaturaRepository
-  application/
-    use-cases/       ← Um arquivo por use case
-  infrastructure/
-    database/        ← PrismaService
-    repositories/    ← PrismaPlanoRepository, PrismaClienteRepository, PrismaAssinaturaRepository
-  presentation/
-    controllers/     ← GestaoController
+
+Resultados:
+
+```text
+servico-gestao:         27 testes
+servico-faturamento:    8 testes
+servico-planos-ativos:  9 testes
+api-gateway:            5 testes
 ```
 
-### A5. Seeding
-- `prisma/seed.ts` com 10 clientes, 5 planos, 5 assinaturas
+Fluxo integrado validado pelo gateway:
 
----
+1. `GET /gestao/clientes`
+2. `GET /planosativos/1`
+3. `POST /registrarpagamento`
+4. `GET /planosativos/1`
 
-## Fase B — TDD (7 ciclos)
+## Entregaveis
 
-| # | Use Case | Endpoint | Regra de domínio |
-|---|---|---|---|
-| 1 | `CreateAssinaturaUseCase` | `POST /gestao/assinaturas` | `inicioFidelidade = hoje`, `fimFidelidade = hoje + 365 dias` |
-| 2 | `ListClientesUseCase` | `GET /gestao/clientes` | — |
-| 3 | `ListPlanosUseCase` | `GET /gestao/planos` | — |
-| 4 | `UpdatePlanoCustoUseCase` | `PATCH /gestao/planos/:idPlano` | atualiza `custoMensal` e `data` |
-| 5 | `ListAssinaturasUseCase` | `GET /gestao/assinaturas/:tipo` | `ATIVO = fimFidelidade >= hoje` |
-| 6 | `ListAssinaturasByClienteUseCase` | `GET /gestao/assinaturascliente/:codcli` | — |
-| 7 | `ListAssinaturasByPlanoUseCase` | `GET /gestao/assinaturasplano/:codplano` | — |
+- Codigo-fonte dos quatro servicos.
+- `docker-compose.yml` com infraestrutura.
+- Documentacao de execucao.
+- Relatorio.
+- Arquivo Postman atualizado para a Fase 2.
 
-Cada ciclo segue o fluxo TDD:
-1. **Red** — escrever o teste com mock do repositório
-2. **Green** — implementação mínima para passar
-3. **Refactor** — melhorar sem quebrar
+Nao incluir no zip:
 
----
-
-## Decisões arquiteturais
-
-- Entidades de domínio são **classes TypeScript puras** (sem decorators do Prisma)
-- Repositórios Prisma implementam as interfaces do domínio (princípio DIP do SOLID)
-- Status `ATIVO` = `fimFidelidade >= data de hoje`
-- `Pagamento` e microsserviços ficam para a Fase 2
-
----
-
-## Verificação final
-
-1. `docker compose up -d` → PostgreSQL rodando
-2. `npx prisma migrate dev` → schema aplicado
-3. `npx prisma db seed` → dados populados
-4. `npm run test` → todos os 7 testes passando
-5. `npm run start:dev` → API rodando em `localhost:3000`
-6. Testar todos os 7 endpoints via Postman
-7. Swagger disponível em `/api`
+- `node_modules/`
+- `dist/`
+- `.env`

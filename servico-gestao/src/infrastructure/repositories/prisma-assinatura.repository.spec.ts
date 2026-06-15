@@ -59,4 +59,68 @@ describe('PrismaAssinaturaRepository', () => {
 
         expect(resultado.dataUltimoPagamento).toBeInstanceOf(Date);
     });
+
+    it('deve atualizar dataUltimoPagamento de uma assinatura', async () => {
+        const dataPagamento = new Date('2026-06-14T00:00:00.000Z');
+
+        const prisma = {
+            assinatura: {
+                update: jest.fn().mockResolvedValue({
+                    codigo: 1,
+                    codPlano: 1,
+                    codCli: 1,
+                    inicioFidelidade: new Date('2026-01-01T00:00:00.000Z'),
+                    fimFidelidade: new Date('2027-01-01T00:00:00.000Z'),
+                    dataUltimoPagamento: dataPagamento,
+                    custoFinal: 99.9,
+                    descricao: 'Assinatura teste',
+                }),
+            },
+        };
+
+        const repository = new PrismaAssinaturaRepository(prisma as any);
+
+        const assinatura = await repository.updateDataUltimoPagamento(
+            1,
+            dataPagamento,
+        );
+
+        expect(prisma.assinatura.update).toHaveBeenCalledWith({
+            where: { codigo: 1 },
+            data: { dataUltimoPagamento: dataPagamento },
+        });
+
+        expect(assinatura.codigo).toBe(1);
+        expect(assinatura.dataUltimoPagamento).toEqual(dataPagamento);
+    });
+
+    it('deve buscar assinatura por codigo', async () => {
+        const dataUltimoPagamento = new Date('2026-06-14T00:00:00.000Z');
+
+        const prisma = {
+            assinatura: {
+                findUnique: jest.fn().mockResolvedValue({
+                    codigo: 1,
+                    codPlano: 1,
+                    codCli: 1,
+                    inicioFidelidade: new Date('2026-01-01T00:00:00.000Z'),
+                    fimFidelidade: new Date('2027-01-01T00:00:00.000Z'),
+                    dataUltimoPagamento,
+                    custoFinal: 99.9,
+                    descricao: 'Assinatura teste',
+                }),
+            },
+        };
+
+        const repository = new PrismaAssinaturaRepository(prisma as any);
+
+        const assinatura = await repository.findById(1);
+
+        expect(prisma.assinatura.findUnique).toHaveBeenCalledWith({
+            where: { codigo: 1 },
+        });
+
+        expect(assinatura?.codigo).toBe(1);
+        expect(assinatura?.dataUltimoPagamento).toEqual(dataUltimoPagamento);
+    });
 });

@@ -14,6 +14,9 @@ import { ListarAssinaturasUseCase } from './application/use-cases/listar-assinat
 import { ListarAssinaturasClienteUseCase } from './application/use-cases/listar-assinaturas-cliente.use-case';
 import { ListarAssinaturasPlanoUseCase } from './application/use-cases/listar-assinaturas-plano.use-case';
 import { GestaoController } from './presentation/controllers/gestao.controller';
+import { VerificarAssinaturaAtivaUseCase } from './application/use-cases/verificar-assinatura-ativa.use-case';
+import { RegistrarPagamentoAssinaturaUseCase } from './application/use-cases/registrar-pagamento-assinatura.use-case';
+import { RabbitmqPagamentoConsumer } from './infrastructure/events/rabbitmq-pagamento.consumer';
 
 @Module({
   controllers: [GestaoController],
@@ -29,6 +32,9 @@ import { GestaoController } from './presentation/controllers/gestao.controller';
     ListarAssinaturasUseCase,
     ListarAssinaturasClienteUseCase,
     ListarAssinaturasPlanoUseCase,
+    VerificarAssinaturaAtivaUseCase,
+    RegistrarPagamentoAssinaturaUseCase,
+    RabbitmqPagamentoConsumer,
   ],
 })
 export class AppModule {}

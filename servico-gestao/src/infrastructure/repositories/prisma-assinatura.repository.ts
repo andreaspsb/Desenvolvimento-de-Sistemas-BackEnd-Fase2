@@ -5,7 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class PrismaAssinaturaRepository implements IAssinaturaRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private toEntity(a: any): Assinatura {
     return new Assinatura(
@@ -53,5 +53,22 @@ export class PrismaAssinaturaRepository implements IAssinaturaRepository {
   async findByPlano(codPlano: number): Promise<Assinatura[]> {
     const assinaturas = await this.prisma.assinatura.findMany({ where: { codPlano } });
     return assinaturas.map(this.toEntity);
+  }
+
+  async updateDataUltimoPagamento(
+    codigo: number,
+    dataUltimoPagamento: Date,
+  ): Promise<Assinatura> {
+    const assinatura = await this.prisma.assinatura.update({
+      where: { codigo },
+      data: { dataUltimoPagamento },
+    });
+
+    return this.toEntity(assinatura);
+  }
+
+  async findById(codigo: number): Promise<Assinatura | null> {
+    const assinatura = await this.prisma.assinatura.findUnique({ where: { codigo } });
+    return assinatura ? this.toEntity(assinatura) : null;
   }
 }

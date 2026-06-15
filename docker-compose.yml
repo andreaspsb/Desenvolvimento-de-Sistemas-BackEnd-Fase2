@@ -1,0 +1,38 @@
+services:
+  postgres-gestao:
+    image: postgres:16-alpine
+    container_name: servico-gestao-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: servico_gestao
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_gestao_data:/var/lib/postgresql/data
+
+  postgres-faturamento:
+    image: postgres:16-alpine
+    container_name: servico-faturamento-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: servico_faturamento
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_faturamento_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pagamentos-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  postgres_gestao_data:
+  postgres_faturamento_data:
+  rabbitmq_data:

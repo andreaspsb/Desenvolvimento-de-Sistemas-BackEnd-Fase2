@@ -1,71 +1,97 @@
 # ServicoGestao
 
-API REST de controle de planos de internet, desenvolvida para a disciplina **Desenvolvimento de Sistemas Back-End — Fase 1**.
+Servico principal do sistema de controle de planos de operadora.
 
-**Aluno:** Andreas Berwaldt
+Na Fase 2, o ServicoGestao continua responsavel por clientes, planos e assinaturas, e passa a consumir eventos de pagamento publicados pelo ServicoFaturamento para atualizar `dataUltimoPagamento`.
 
 ## Stack
 
-| Tecnologia | Versão |
+| Tecnologia | Versao |
 |---|---|
 | Node.js | 20+ |
 | TypeScript | 5.x |
 | NestJS | 11.x |
 | Prisma ORM | 7.x |
 | PostgreSQL | 16 |
-| Docker | 24+ |
-| Jest | 29.x |
+| RabbitMQ | 3.x |
+| Jest | 30.x |
 
-Arquitetura: **Clean Architecture** (domain / application / infrastructure / presentation)
+Arquitetura: **Clean Architecture** (`domain / application / infrastructure / presentation`).
 
-## Pré-requisitos
+## Variaveis de Ambiente
 
-- Node.js v20+
-- Docker Desktop
+Crie `.env` a partir de `.env.example`:
 
-## Configuração e execução
+```env
+PORT=3001
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/servico_gestao?schema=public"
+RABBITMQ_URL="amqp://localhost:5672"
+```
+
+## Execucao
+
+Na raiz do repositorio, suba PostgreSQL e RabbitMQ:
 
 ```bash
-# 1. Subir o banco de dados (PostgreSQL na porta 5433)
 docker compose up -d
-
-# 2. Criar o arquivo de variáveis de ambiente
-cp .env.example .env
-
-# 3. Instalar dependências
-npm install
-
-# 4. Executar migrations
-npx prisma migrate deploy
-
-# 5. Popular o banco (10 clientes, 5 planos, 5 assinaturas)
-npx ts-node prisma/seed.ts
-
-# 6. Iniciar o servidor (porta 3001)
-npm run start:dev
 ```
+
+Dentro de `servico-gestao`:
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run seed
+npm run start
+```
+
+O servico roda em `http://localhost:3001`.
 
 ## Endpoints
 
-| Método | Rota | Descrição |
+| Metodo | Rota | Descricao |
 |---|---|---|
 | GET | `/gestao/clientes` | Lista todos os clientes |
 | GET | `/gestao/planos` | Lista todos os planos |
 | POST | `/gestao/assinaturas` | Cria uma assinatura |
 | PATCH | `/gestao/planos/:idPlano` | Atualiza custo mensal de um plano |
-| GET | `/gestao/assinaturas/:tipo` | Lista assinaturas (TODOS, ATIVOS, CANCELADOS) |
-| GET | `/gestao/assinaturascliente/:codcli` | Assinaturas de um cliente |
-| GET | `/gestao/assinaturasplano/:codplano` | Assinaturas de um plano |
+| GET | `/gestao/assinaturas/:tipo` | Lista assinaturas (`TODOS`, `ATIVOS`, `CANCELADOS`) |
+| GET | `/gestao/assinaturascliente/:codcli` | Lista assinaturas de um cliente |
+| GET | `/gestao/assinaturasplano/:codplano` | Lista assinaturas de um plano |
+| GET | `/gestao/assinatura/:codass/status` | Retorna `true` ou `false` para assinatura ativa |
 
 Body do POST `/gestao/assinaturas`:
+
 ```json
 { "codPlano": 1, "codCli": 1 }
 ```
 
 Body do PATCH `/gestao/planos/:idPlano`:
+
 ```json
-{ "custoMensal": 99.90 }
+{ "custoMensal": 99.9 }
 ```
+
+## Eventos
+
+O servico observa eventos de pagamento no exchange RabbitMQ `pagamentos`.
+
+Payload esperado:
+
+```json
+{
+  "codAss": 1,
+  "valorPago": 99.9,
+  "dataPagamento": "2026-06-14T00:00:00.000Z"
+}
+```
+
+Ao receber o evento, o ServicoGestao atualiza `dataUltimoPagamento` da assinatura indicada por `codAss`.
+
+## Regra de Assinatura Ativa
+
+Uma assinatura esta ativa quando `dataUltimoPagamento` ocorreu ha menos de 30 dias. O campo `fimFidelidade` representa o periodo de fidelidade/promocionalidade e nao determina o bloqueio do servico.
 
 ## Testes
 
@@ -73,10 +99,9 @@ Body do PATCH `/gestao/planos/:idPlano`:
 npm test
 ```
 
-18 testes passando em 8 suites (use cases + entidade Assinatura).
+Resultado validado:
 
-## Parar o ambiente
-
-```bash
-docker compose down
+```text
+Test Suites: 13 passed, 13 total
+Tests:       27 passed, 27 total
 ```
